@@ -1,11 +1,18 @@
 import * as React from 'react';
+import { useState } from 'react';
 import { ReportList } from './ReportList';
+import { ReportWizard } from '@/components/ReportWizard/ReportWizard';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Shield, Zap, Cloud } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
+  const [showWizard, setShowWizard] = useState(false);
+
   return (
-    <div className="space-y-8">
+    <>
+      {showWizard && <ReportWizard onClose={() => setShowWizard(false)} />}
+
+      <div className="space-y-8">
       {/* Welcome Section */}
       <div>
         <h1 className="text-3xl font-bold mb-2">Dashboard</h1>
@@ -60,7 +67,8 @@ export const Dashboard: React.FC = () => {
       </div>
 
       {/* Reports List */}
-      <ReportList />
+      <ReportList onCreateNew={() => setShowWizard(true)} />
     </div>
+  </>
   );
 };

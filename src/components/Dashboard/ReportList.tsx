@@ -15,12 +15,14 @@ interface DecryptedReportMeta {
   syncStatus: 'synced' | 'pending' | 'conflict' | 'local-only';
 }
 
-export const ReportList: React.FC = () => {
-  const { reports, isLoading, error, loadReports, createReport, deleteReport } =
-    useReportStore();
+interface ReportListProps {
+  onCreateNew: () => void;
+}
+
+export const ReportList: React.FC<ReportListProps> = ({ onCreateNew }) => {
+  const { reports, isLoading, error, loadReports, deleteReport } = useReportStore();
   const [decryptedMeta, setDecryptedMeta] = useState<DecryptedReportMeta[]>([]);
   const [isDecrypting, setIsDecrypting] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     loadReports();
@@ -62,18 +64,6 @@ export const ReportList: React.FC = () => {
 
     decryptTitles();
   }, [reports]);
-
-  const handleCreateReport = async () => {
-    setIsCreating(true);
-    try {
-      const title = `Report ${new Date().toLocaleDateString()}`;
-      await createReport(title, {});
-    } catch (err) {
-      console.error('Failed to create report:', err);
-    } finally {
-      setIsCreating(false);
-    }
-  };
 
   const handleDeleteReport = async (id: string, title: string) => {
     if (confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
@@ -140,7 +130,7 @@ export const ReportList: React.FC = () => {
         <p className="text-text-muted mb-6 max-w-md mx-auto">
           Create your first report to get started with the SSA Adult Function Report assistance.
         </p>
-        <Button onClick={handleCreateReport} isLoading={isCreating}>
+        <Button onClick={onCreateNew}>
           <Plus className="h-5 w-5 mr-2" />
           Create Your First Report
         </Button>
@@ -154,7 +144,7 @@ export const ReportList: React.FC = () => {
         <h2 className="text-xl font-semibold">
           Your Reports ({decryptedMeta.length})
         </h2>
-        <Button onClick={handleCreateReport} isLoading={isCreating}>
+        <Button onClick={onCreateNew}>
           <Plus className="h-5 w-5 mr-2" />
           New Report
         </Button>

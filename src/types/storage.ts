@@ -41,7 +41,7 @@ export interface ReportData {
   id: string;
   title: string;
   selectedBlueBookListings: string[]; // Array of listing IDs
-  functionalInputs: FunctionalInput[];
+  functionalInputs: any; // SSAFormData from ssa-form.ts
   generatedSections: GeneratedSection[];
   createdAt: number;
   lastModified: number;
