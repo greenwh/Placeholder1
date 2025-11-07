@@ -10,6 +10,7 @@ import { WizardNavigation } from './WizardNavigation';
 import { BlueBookSelection } from './steps/BlueBookSelection';
 import { FunctionalInputs } from './steps/FunctionalInputs';
 import { AIGeneration } from './steps/AIGeneration';
+import { ReviewAndExport } from './steps/ReviewAndExport';
 import { Button } from '@/components/ui/Button';
 
 interface ReportWizardProps {
@@ -49,12 +50,7 @@ const WizardContent: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       case 3:
         return <AIGeneration />;
       case 4:
-        return (
-          <div className="text-center py-12">
-            <h3 className="text-xl font-semibold mb-2">Step 4: Review & Export</h3>
-            <p className="text-text-muted">Coming in Phase 3...</p>
-          </div>
-        );
+        return <ReviewAndExport />;
       default:
         return null;
     }
