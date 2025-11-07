@@ -1,7 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from './stores/authStore';
 import { PassphraseSetup } from './components/Auth/PassphraseSetup';
 import { PassphraseUnlock } from './components/Auth/PassphraseUnlock';
+import { Navigation, type Page } from './components/Navigation/Navigation';
+import { Dashboard } from './components/Dashboard/Dashboard';
+import { Settings } from './components/Settings/Settings';
+import { Help } from './components/Help/Help';
 
 function App() {
   const {
@@ -13,6 +17,8 @@ function App() {
     setupPassphrase,
     unlock,
   } = useAuthStore();
+
+  const [currentPage, setCurrentPage] = useState<Page>('dashboard');
 
   useEffect(() => {
     initialize();
@@ -54,26 +60,24 @@ function App() {
     return <PassphraseUnlock onUnlock={unlock} />;
   }
 
+  const renderPage = () => {
+    switch (currentPage) {
+      case 'dashboard':
+        return <Dashboard />;
+      case 'settings':
+        return <Settings />;
+      case 'help':
+        return <Help />;
+      default:
+        return <Dashboard />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border sticky top-0 bg-background z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-primary">SSA Form-Assist</h1>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <Navigation currentPage={currentPage} onNavigate={setCurrentPage} />
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center space-y-4">
-          <h2 className="text-xl font-semibold">Dashboard</h2>
-          <p className="text-text-muted">
-            Your privacy-first AI assistant for completing SSA Adult Function Reports
-          </p>
-          <div className="bg-success/10 border border-success/20 rounded-md p-4 max-w-md mx-auto">
-            <p className="text-success font-semibold">Session Unlocked</p>
-            <p className="text-sm text-text-muted mt-1">
-              All your data is encrypted and secure
-            </p>
-          </div>
-        </div>
+        {renderPage()}
       </main>
     </div>
   );
