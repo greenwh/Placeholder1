@@ -4,7 +4,8 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Alert } from '@/components/ui/Alert';
-import { Lock, Key, Cloud, CheckCircle } from 'lucide-react';
+import { Badge } from '@/components/ui/Badge';
+import { Lock, Key, Cloud, Info } from 'lucide-react';
 import { useAuthStore } from '@/stores/authStore';
 import { indexedDBService } from '@/services/storage/IndexedDBService';
 import { encryptionService } from '@/services/encryption/EncryptionService';
@@ -18,6 +19,12 @@ export const Settings: React.FC = () => {
     openai: '',
     claude: '',
     xai: '',
+  });
+  const [modelConfigs, setModelConfigs] = useState({
+    gemini: 'gemini-2.0-flash-exp',
+    openai: 'gpt-4o-mini',
+    claude: 'claude-sonnet-4-5-20250929',
+    xai: 'grok-beta',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -38,17 +45,37 @@ export const Settings: React.FC = () => {
         const decryptedKeys = await encryptionService.decrypt(config.encryptedAPIKeys);
         const keys = JSON.parse(decryptedKeys);
         setApiKeys(keys);
+
+        // Decrypt model configs if available
+        if (config.encryptedModelConfigs) {
+          try {
+            const decryptedModels = await encryptionService.decrypt(config.encryptedModelConfigs);
+            const models = JSON.parse(decryptedModels);
+            setModelConfigs(models);
+          } catch (err) {
+            console.error('Failed to decrypt model configs:', err);
+          }
+        }
       }
 
-      // Load environment variable API keys if available
+      // Load environment variable API keys and models if available (pre-populate)
       if (hasEnvKeys) {
         const envConfig = getAPIConfigFromEnv();
+
+        // Pre-populate API keys from env (can be overridden)
         setApiKeys(prev => ({
-          ...prev,
           gemini: envConfig.google?.apiKey || prev.gemini,
           openai: envConfig.openai?.apiKey || prev.openai,
           claude: envConfig.anthropic?.apiKey || prev.claude,
           xai: envConfig.xai?.apiKey || prev.xai,
+        }));
+
+        // Pre-populate model names from env (can be overridden)
+        setModelConfigs(prev => ({
+          gemini: envConfig.google?.model || prev.gemini,
+          openai: envConfig.openai?.model || prev.openai,
+          claude: envConfig.anthropic?.model || prev.claude,
+          xai: envConfig.xai?.model || prev.xai,
         }));
       }
     } catch (err) {
@@ -69,10 +96,14 @@ export const Settings: React.FC = () => {
       // Encrypt API keys
       const encryptedAPIKeys = await encryptionService.encrypt(JSON.stringify(apiKeys));
 
+      // Encrypt model configs
+      const encryptedModelConfigs = await encryptionService.encrypt(JSON.stringify(modelConfigs));
+
       await indexedDBService.saveConfig({
         ...config,
         selectedLLM,
         encryptedAPIKeys,
+        encryptedModelConfigs,
         lastModified: Date.now(),
       });
 
@@ -110,22 +141,22 @@ export const Settings: React.FC = () => {
             LLM Provider Configuration
           </CardTitle>
           <CardDescription>
-            Configure your AI provider API keys. All keys are encrypted before storage.
+            Configure your AI provider API keys and models. All settings are encrypted before storage.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Environment Variable Status */}
           {hasEnvKeys && (
-            <Alert variant="success">
+            <Alert variant="info">
               <div className="flex items-start gap-2">
-                <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <Info className="h-5 w-5 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-semibold">Environment Variables Detected</p>
                   <p className="text-sm mt-1">
-                    API keys configured via .env file for: {envProviders.join(', ')}
+                    Pre-populated from .env file for: {envProviders.join(', ')}
                   </p>
                   <p className="text-xs mt-2 opacity-75">
-                    Environment variables take precedence over stored values
+                    You can override these values below. Your changes will be saved to encrypted storage.
                   </p>
                 </div>
               </div>
@@ -149,49 +180,108 @@ export const Settings: React.FC = () => {
             </select>
           </div>
 
-          {/* API Keys */}
-          <div className="space-y-4">
-            <Input
-              type="password"
-              label="Gemini API Key"
-              placeholder="AIza..."
-              value={apiKeys.gemini}
-              onChange={(e) => setApiKeys({ ...apiKeys, gemini: e.target.value })}
-              helpText="Get your API key from Google AI Studio"
-              disabled={hasEnvKeys}
-            />
-            <Input
-              type="password"
-              label="OpenAI API Key"
-              placeholder="sk-..."
-              value={apiKeys.openai}
-              onChange={(e) => setApiKeys({ ...apiKeys, openai: e.target.value })}
-              helpText="Get your API key from platform.openai.com"
-              disabled={hasEnvKeys}
-            />
-            <Input
-              type="password"
-              label="Claude API Key"
-              placeholder="sk-ant-..."
-              value={apiKeys.claude}
-              onChange={(e) => setApiKeys({ ...apiKeys, claude: e.target.value })}
-              helpText="Get your API key from console.anthropic.com"
-              disabled={hasEnvKeys}
-            />
-            <Input
-              type="password"
-              label="xAI (Grok) API Key"
-              placeholder="xai-..."
-              value={apiKeys.xai}
-              onChange={(e) => setApiKeys({ ...apiKeys, xai: e.target.value })}
-              helpText="Get your API key from console.x.ai"
-              disabled={hasEnvKeys}
-            />
+          {/* API Keys and Models */}
+          <div className="space-y-6">
+            {/* Gemini */}
+            <div className="border border-border rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                Google Gemini
+                {selectedLLM === 'gemini' && <Badge variant="success">Selected</Badge>}
+              </h3>
+              <Input
+                type="password"
+                label="API Key"
+                placeholder="AIza..."
+                value={apiKeys.gemini}
+                onChange={(e) => setApiKeys({ ...apiKeys, gemini: e.target.value })}
+                helpText="Get your API key from Google AI Studio"
+              />
+              <Input
+                type="text"
+                label="Model Name"
+                placeholder="gemini-2.0-flash-exp"
+                value={modelConfigs.gemini}
+                onChange={(e) => setModelConfigs({ ...modelConfigs, gemini: e.target.value })}
+                helpText="e.g., gemini-2.0-flash-exp, gemini-1.5-pro"
+              />
+            </div>
+
+            {/* OpenAI */}
+            <div className="border border-border rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                OpenAI
+                {selectedLLM === 'openai' && <Badge variant="success">Selected</Badge>}
+              </h3>
+              <Input
+                type="password"
+                label="API Key"
+                placeholder="sk-..."
+                value={apiKeys.openai}
+                onChange={(e) => setApiKeys({ ...apiKeys, openai: e.target.value })}
+                helpText="Get your API key from platform.openai.com"
+              />
+              <Input
+                type="text"
+                label="Model Name"
+                placeholder="gpt-4o-mini"
+                value={modelConfigs.openai}
+                onChange={(e) => setModelConfigs({ ...modelConfigs, openai: e.target.value })}
+                helpText="e.g., gpt-4o-mini, gpt-4o, gpt-4-turbo"
+              />
+            </div>
+
+            {/* Claude */}
+            <div className="border border-border rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                Anthropic Claude
+                {selectedLLM === 'claude' && <Badge variant="success">Selected</Badge>}
+              </h3>
+              <Input
+                type="password"
+                label="API Key"
+                placeholder="sk-ant-..."
+                value={apiKeys.claude}
+                onChange={(e) => setApiKeys({ ...apiKeys, claude: e.target.value })}
+                helpText="Get your API key from console.anthropic.com"
+              />
+              <Input
+                type="text"
+                label="Model Name"
+                placeholder="claude-sonnet-4-5-20250929"
+                value={modelConfigs.claude}
+                onChange={(e) => setModelConfigs({ ...modelConfigs, claude: e.target.value })}
+                helpText="e.g., claude-sonnet-4-5-20250929, claude-3-5-sonnet-20241022"
+              />
+            </div>
+
+            {/* xAI */}
+            <div className="border border-border rounded-lg p-4 space-y-3">
+              <h3 className="font-semibold flex items-center gap-2">
+                xAI (Grok)
+                {selectedLLM === 'xai' && <Badge variant="success">Selected</Badge>}
+              </h3>
+              <Input
+                type="password"
+                label="API Key"
+                placeholder="xai-..."
+                value={apiKeys.xai}
+                onChange={(e) => setApiKeys({ ...apiKeys, xai: e.target.value })}
+                helpText="Get your API key from console.x.ai"
+              />
+              <Input
+                type="text"
+                label="Model Name"
+                placeholder="grok-beta"
+                value={modelConfigs.xai}
+                onChange={(e) => setModelConfigs({ ...modelConfigs, xai: e.target.value })}
+                helpText="e.g., grok-beta, grok-2"
+              />
+            </div>
           </div>
 
           <Alert variant="info">
             <p className="text-sm">
-              <strong>Note:</strong> API keys are encrypted with your passphrase before being stored.
+              <strong>Note:</strong> API keys and model names are encrypted with your passphrase before being stored.
               You'll be charged directly by the provider based on your usage.
             </p>
           </Alert>
@@ -268,6 +358,3 @@ export const Settings: React.FC = () => {
     </div>
   );
 };
-
-// Add Badge import if not already in file
-import { Badge } from '@/components/ui/Badge';

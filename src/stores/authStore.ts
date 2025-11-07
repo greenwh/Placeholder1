@@ -68,6 +68,14 @@ export const useAuthStore = create<AuthState>((set) => ({
         salt: btoa(String.fromCharCode(...salt)),
         selectedLLM: 'gemini',
         encryptedAPIKeys: await encryptionService.encrypt(JSON.stringify({})),
+        encryptedModelConfigs: await encryptionService.encrypt(
+          JSON.stringify({
+            gemini: 'gemini-2.0-flash-exp',
+            openai: 'gpt-4o-mini',
+            claude: 'claude-sonnet-4-5-20250929',
+            xai: 'grok-beta',
+          })
+        ),
         lastModified: Date.now(),
         testEncryptedData,
       };

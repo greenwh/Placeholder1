@@ -9,6 +9,7 @@ export interface UserConfig {
   salt: string;                    // Base64-encoded salt
   selectedLLM: 'gemini' | 'openai' | 'claude' | 'xai';
   encryptedAPIKeys: EncryptedData; // Encrypted JSON of API keys
+  encryptedModelConfigs: EncryptedData; // Encrypted JSON of model names per provider
   encryptedCloudConfig?: EncryptedData; // Optional cloud sync config
   lastModified: number;
   testEncryptedData: EncryptedData; // For passphrase verification
