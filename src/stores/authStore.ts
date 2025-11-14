@@ -84,9 +84,17 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       // Cache Blue Book data
       const baseUrl = import.meta.env.BASE_URL || '/';
-      const bluebookDataRaw = await fetch(`${baseUrl}data/bluebook/ssa_bluebook_adult_complete.json`.replace('//', '/')).then(
-        (r) => r.json()
-      );
+      const fetchUrl = `${baseUrl}data/bluebook/ssa_bluebook_adult_complete.json`.replace('//', '/');
+      console.log('[Setup] Fetching Blue Book data from:', fetchUrl);
+
+      const response = await fetch(fetchUrl);
+      if (!response.ok) {
+        console.error('[Setup] Failed to fetch Blue Book data:', response.status, response.statusText);
+        throw new Error(`Failed to fetch Blue Book data: ${response.status}`);
+      }
+
+      const bluebookDataRaw = await response.json();
+      console.log('[Setup] Blue Book data loaded:', bluebookDataRaw.length, 'listings');
 
       // Transform data to match TypeScript interface
       const bluebookData = bluebookDataRaw.map((item: any) => ({
@@ -101,7 +109,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         listing_name: item.listing_name,
       }));
 
+      console.log('[Setup] Blue Book data transformed:', bluebookData.length, 'listings');
       await indexedDBService.cacheBlueBookListings(bluebookData);
+      console.log('[Setup] Blue Book data cached successfully');
 
       set({
         isFirstTimeSetup: false,
@@ -147,12 +157,22 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       // Check if Blue Book data is cached, if not, load it
       const cachedListings = await indexedDBService.getAllBlueBookListings();
+      console.log('[Unlock] Cached Blue Book listings:', cachedListings.length);
+
       if (cachedListings.length === 0) {
         try {
           const baseUrl = import.meta.env.BASE_URL || '/';
-          const bluebookDataRaw = await fetch(`${baseUrl}data/bluebook/ssa_bluebook_adult_complete.json`.replace('//', '/')).then(
-            (r) => r.json()
-          );
+          const fetchUrl = `${baseUrl}data/bluebook/ssa_bluebook_adult_complete.json`.replace('//', '/');
+          console.log('[Unlock] Fetching Blue Book data from:', fetchUrl);
+
+          const response = await fetch(fetchUrl);
+          if (!response.ok) {
+            console.error('[Unlock] Failed to fetch Blue Book data:', response.status, response.statusText);
+            throw new Error(`Failed to fetch Blue Book data: ${response.status}`);
+          }
+
+          const bluebookDataRaw = await response.json();
+          console.log('[Unlock] Blue Book data loaded:', bluebookDataRaw.length, 'listings');
 
           // Transform data to match TypeScript interface
           const bluebookData = bluebookDataRaw.map((item: any) => ({
@@ -167,9 +187,11 @@ export const useAuthStore = create<AuthState>((set) => ({
             listing_name: item.listing_name,
           }));
 
+          console.log('[Unlock] Blue Book data transformed:', bluebookData.length, 'listings');
           await indexedDBService.cacheBlueBookListings(bluebookData);
+          console.log('[Unlock] Blue Book data cached successfully');
         } catch (error) {
-          console.error('Failed to load Blue Book data:', error);
+          console.error('[Unlock] Failed to load Blue Book data:', error);
         }
       }
 

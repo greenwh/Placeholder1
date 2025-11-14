@@ -30,10 +30,13 @@ export const BlueBookSelection: React.FC = () => {
 
   const loadBlueBookListings = async () => {
     try {
+      console.log('[BlueBookSelection] Loading listings from IndexedDB...');
       const cached = await indexedDBService.getAllBlueBookListings();
+      console.log('[BlueBookSelection] Loaded', cached.length, 'listings');
+      console.log('[BlueBookSelection] Sample listing:', cached[0]);
       setListings(cached);
     } catch (error) {
-      console.error('Failed to load Blue Book listings:', error);
+      console.error('[BlueBookSelection] Failed to load Blue Book listings:', error);
     } finally {
       setIsLoading(false);
     }
